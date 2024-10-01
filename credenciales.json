@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "ortopedia-d21f4",
+  "private_key_id": "6c3be1c3f55ff8bda0f61cfdb5b0556390fe5ef8",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC2zNC+MU9E6Uzu\n3M9nsk/h9aukCyUet85HgEpaijCyNoAG1vwbChjH9uohnf2aP1QiEFl13cKFMfkZ\nSMg6hSbDqImYdW2yZ5ZqFAe6z3VMICTGXGOo+sciUAMZ+PVRfz1AVhQzfQ495tcg\nODp1pUPs6KMF33x8HFfd16vf/OxK8dvsfRCkV0Msx4tI4j+3zyoDOGqUKnS5Q4PN\ng0t+OmuU3sIMM117ItJQRiJqLIrPHrbdeIU440LGjhZxeEV5hPzgT7LM3/W0ZN/J\nvQ+2TCI0q1b1ABnX127GRqPRM+ZRJmfSwX360XKsqSvj/FPnkPUehWuTpztGnJLr\nH4rkgcp9AgMBAAECggEAGsLZ8w4QTHFZ1ETlOYlu4mXvI8vcj6ZZqjlg0+e+gJ3e\nmPcTifiCGjwj7e9NjNhP6SYQQrjIB8HXdYPPNFSr5nb09dSIeQFrPB+vO1ewaghG\npKIqlja9vQs4+QNrvpZBvE/IaKVFLCYa66+aTKt4yeULgLTwFNH9bGUXghS/7v9A\nzpTvj4sS+/EpsClcEnh7GWXFMgn51GswseJakiz2Gv+ZiJ531qerk+ZbKSP+V7G7\nb5oQxY1FofBGLoVlWu7oKPqgI/q70Na4QZtngVc4ZYnjV3yg8Ukv5cQ+KaGQ/Wf2\nz1ANcKMlz0+1Bm84gWIbjX+dob4ZTGFLMicyDHvQbQKBgQD204jfOvu+LbWkFxSL\nf9pYn/vOaDjnIX6gVVRocvQnIvvx6YOg+ZgiejxJQH0HHaQ69SpERX75K0YmxY9o\n+xFmHCNOfOTwVZN21JsRAFDpn7GGpEJgIIoH9+LT0F+OpXJ5hPtreKMZ88AEl0O9\nEyXFr4Ey6iW2f5mCBAiN3uRHgwKBgQC9mBfz2fC7NvBhzzOrRo38iU6hrF7P7Heq\nptcrbZ7c/4q6pDPvfiqLPUG4O3zQV6eQnzNEkCZYBLJjD4a+lURSr0lrS8ShQGdP\nLHITJcLkfomHRo7goVJMIAH2CbaKF6Jr4/tK40oTUWeeg1DL0p1XTsVPQu/gRHvM\nKChjiRMF/wKBgQDBhPKgSweLgR0T7UCfavuPVse/ejl7BejY3m4SgmZotOYiMjqQ\noICmL35K1HPye0wDKasc4fv+ce5LgcPBxG9Mxqzr4cJBqGa42VJGzx+hPCKc9PZR\nldGDE9hUx9/T4GXTXu8cwPXn6BNZxhtHB9cqmkLK34f4AS0jIfRu/x2t7wKBgE/5\noVj2vQpr8ViA69265Ff7n5SpPlFdAVmWCTvDgPjePqnebB4BTXbwvxE03sCPyRpD\nXX/1gocsbAdHXGJ2Wpy6XjEJhAc1QJ7wM6qKCj0Sd3b9t3Vf93QvKESd8kcsExKJ\n183ONMgTVa9S2zkvPbm/e5GkvcUPfl0vL2JVRxYHAoGBAI6pvLYOlBjQZmghIPZI\naMQ/yPyAvwfY5JUlLTLPKYaKeLHIocwcYuWTdqeAIrzHHwsycEq4fdku1ZEDfeAE\n6mihMyFe/PWs7QTAtpErqRxnCzk2SGVRW9oBOBO97mqcRT5UsN/Cwh0aCTRzzrhw\nMPhgBRZLdpBRjg7cLfz6DOMa\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-wg1e9@ortopedia-d21f4.iam.gserviceaccount.com",
+  "client_id": "109850468907182925975",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-wg1e9%40ortopedia-d21f4.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
