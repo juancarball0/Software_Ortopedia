@@ -42,6 +42,37 @@ def measure_foot_dimensions(contours):
         return w, h, area, perimeter
     return None
 
+def analyze_arch(contours, height, width):
+    if len(contours) > 0:
+        contour = max(contours, key=cv2.contourArea)
+        _, _, w, h = cv2.boundingRect(contour)
+        
+        # Analiza la curvatura en la parte media del pie
+        arch_height = height / 3  # Ejemplo, dividir la imagen en tercios y evaluar la curvatura
+        arch_area = cv2.contourArea(contour)
+
+        # Comparar el arco en esta región
+        if arch_height < h / 6:
+            return "Pie plano", arch_area
+        elif arch_height > h / 3:
+            return "Pie cavo", arch_area
+        else:
+            return "Arco normal", arch_area
+    return None
+
+def analyze_fascia(contours):
+    if len(contours) > 0:
+        contour = max(contours, key=cv2.contourArea)
+        _, _, w, h = cv2.boundingRect(contour)
+        fascia_length = h * 0.8  # Ejemplo basado en una proporción del contorno
+        return fascia_length
+    return None
+
+def analyze_metatarsals_and_pad(pressure_map):
+    # Asume que las regiones con mayor valor de presión son la almohadilla plantar y los metatarsos
+    metatarsal_area = np.sum(pressure_map > 200)  # Ejemplo: define un umbral de presión
+    return metatarsal_area
+
 def start_cameras_and_analyze():
     cap1 = cv2.VideoCapture(0)
     cap2 = cv2.VideoCapture(1)
@@ -74,6 +105,15 @@ def start_cameras_and_analyze():
             cv2.putText(contour_frame1, f"Area: {area1}px^2", (10, 90),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
+            # Análisis adicional para la primera cámara
+            arch_analysis1 = analyze_arch(contours1, height1, width1)
+            fascia_analysis1 = analyze_fascia(contours1)
+            metatarsal_analysis1 = analyze_metatarsals_and_pad(pressure_map1)
+
+            if arch_analysis1:
+                cv2.putText(contour_frame1, f"Arco: {arch_analysis1[0]}", (10, 120),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+
         if dimensions2:
             width2, height2, area2, perimeter2 = dimensions2
             cv2.putText(contour_frame2, f"Ancho: {width2}px", (10, 30),
@@ -82,6 +122,15 @@ def start_cameras_and_analyze():
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
             cv2.putText(contour_frame2, f"Area: {area2}px^2", (10, 90),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+
+            # Análisis adicional para la segunda cámara
+            arch_analysis2 = analyze_arch(contours2, height2, width2)
+            fascia_analysis2 = analyze_fascia(contours2)
+            metatarsal_analysis2 = analyze_metatarsals_and_pad(pressure_map2)
+
+            if arch_analysis2:
+                cv2.putText(contour_frame2, f"Arco: {arch_analysis2[0]}", (10, 120),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
         # Mostrar las imágenes procesadas de ambas cámaras
         cv2.imshow("Imagen Original - Camara 1", frame1)
@@ -119,8 +168,6 @@ def start_cameras_and_analyze():
             cv2.imwrite(cam2_original_path, frame2)
             cv2.imwrite(cam2_contour_path, contour_frame2)
             cv2.imwrite(cam2_pressure_path, pressure_map2)
-
-            print("Imágenes capturadas de ambas cámaras y guardadas localmente.")
 
             # Subir imágenes a Firebase, dentro del folder del paciente
             upload_image_to_firebase(cam1_original_path, folder_name)
