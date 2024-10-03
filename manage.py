@@ -19,18 +19,21 @@ def upload_image_to_firebase(image_path, folder_name):
     print(f"Imagen {image_path} subida exitosamente a Firebase Storage en la carpeta {folder_name}.")
 
 def process_image(frame):
-    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # Convertimos la imagen a escala de grises
     blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
     binary_frame = cv2.adaptiveThreshold(blurred_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     contours, _ = cv2.findContours(binary_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contour_frame = frame.copy()
-    cv2.drawContours(contour_frame, contours, -1, (0, 255, 0), 2)
+    contour_frame = gray_frame.copy()  # Usamos el marco en escala de grises para los contornos
+
+    # Generar un mapa de presión basado en el marco en blanco y negro
     pressure_map = detect_pressure_areas(gray_frame)
     return contour_frame, binary_frame, contours, pressure_map
 
 def detect_pressure_areas(gray_frame):
+    # Normalizamos el marco gris para crear un "mapa de calor" que imita una cámara térmica
     normalized_frame = cv2.normalize(gray_frame, None, 0, 255, cv2.NORM_MINMAX)
     heatmap = cv2.applyColorMap(normalized_frame, cv2.COLORMAP_JET)
+    
     return heatmap
 
 def measure_foot_dimensions(contours):
@@ -99,11 +102,11 @@ def start_cameras_and_analyze():
         if dimensions1:
             width1, height1, area1, perimeter1 = dimensions1
             cv2.putText(contour_frame1, f"Ancho: {width1}px", (10, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
             cv2.putText(contour_frame1, f"Alto: {height1}px", (10, 60),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
             cv2.putText(contour_frame1, f"Area: {area1}px^2", (10, 90),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
             # Análisis adicional para la primera cámara
             arch_analysis1 = analyze_arch(contours1, height1, width1)
@@ -112,16 +115,16 @@ def start_cameras_and_analyze():
 
             if arch_analysis1:
                 cv2.putText(contour_frame1, f"Arco: {arch_analysis1[0]}", (10, 120),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
         if dimensions2:
             width2, height2, area2, perimeter2 = dimensions2
             cv2.putText(contour_frame2, f"Ancho: {width2}px", (10, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
             cv2.putText(contour_frame2, f"Alto: {height2}px", (10, 60),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
             cv2.putText(contour_frame2, f"Area: {area2}px^2", (10, 90),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
             # Análisis adicional para la segunda cámara
             arch_analysis2 = analyze_arch(contours2, height2, width2)
@@ -130,16 +133,16 @@ def start_cameras_and_analyze():
 
             if arch_analysis2:
                 cv2.putText(contour_frame2, f"Arco: {arch_analysis2[0]}", (10, 120),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
         # Mostrar las imágenes procesadas de ambas cámaras
-        cv2.imshow("Imagen Original - Camara 1", frame1)
-        cv2.imshow("Contornos - Camara 1", contour_frame1)
-        cv2.imshow("Mapa de Presión - Camara 1", pressure_map1)
+        cv2.imshow("Contornos - Camara 1", contour_frame1)  # Solo contornos en blanco y negro
+        cv2.imshow("Mapa de Presión Térmica - Camara 1", pressure_map1)  # Mapa de presión en color
+        cv2.imshow("Imagen en Blanco y Negro - Camara 1", binary_frame1)  # Imagen original en blanco y negro
 
-        cv2.imshow("Imagen Original - Camara 2", frame2)
-        cv2.imshow("Contornos - Camara 2", contour_frame2)
-        cv2.imshow("Mapa de Presión - Camara 2", pressure_map2)
+        cv2.imshow("Contornos - Camara 2", contour_frame2)  # Solo contornos en blanco y negro
+        cv2.imshow("Mapa de Presión Térmica - Camara 2", pressure_map2)  # Mapa de presión en color
+        cv2.imshow("Imagen en Blanco y Negro - Camara 2", binary_frame2)  # Imagen original en blanco y negro
 
         key = cv2.waitKey(1) & 0xFF
 
@@ -154,35 +157,39 @@ def start_cameras_and_analyze():
 
             cam1_original_path = f'./captures/foot_cam1_original_{timestamp}.png'
             cam1_contour_path = f'./captures/foot_cam1_contours_{timestamp}.png'
-            cam1_pressure_path = f'./captures/foot_cam1_pressure_{timestamp}.png'
+            cam1_pressure_map_path = f'./captures/foot_cam1_pressure_map_{timestamp}.png'
+            cam1_gray_heatmap_path = f'./captures/foot_cam1_gray_heatmap_{timestamp}.png'
 
             cam2_original_path = f'./captures/foot_cam2_original_{timestamp}.png'
             cam2_contour_path = f'./captures/foot_cam2_contours_{timestamp}.png'
-            cam2_pressure_path = f'./captures/foot_cam2_pressure_{timestamp}.png'
+            cam2_pressure_map_path = f'./captures/foot_cam2_pressure_map_{timestamp}.png'
+            cam2_gray_heatmap_path = f'./captures/foot_cam2_gray_heatmap_{timestamp}.png'
 
-            # Guardar imágenes de ambas cámaras
+            # Guardar imágenes
             cv2.imwrite(cam1_original_path, frame1)
             cv2.imwrite(cam1_contour_path, contour_frame1)
-            cv2.imwrite(cam1_pressure_path, pressure_map1)
-
+            cv2.imwrite(cam1_pressure_map_path, pressure_map1)
+            cv2.imwrite(cam1_gray_heatmap_path, binary_frame1)  # Cambia a binary_frame1
+            
             cv2.imwrite(cam2_original_path, frame2)
             cv2.imwrite(cam2_contour_path, contour_frame2)
-            cv2.imwrite(cam2_pressure_path, pressure_map2)
+            cv2.imwrite(cam2_pressure_map_path, pressure_map2)
+            cv2.imwrite(cam2_gray_heatmap_path, binary_frame2)  # Cambia a binary_frame2
 
-            # Subir imágenes a Firebase, dentro del folder del paciente
+            # Subir imágenes a Firebase
             upload_image_to_firebase(cam1_original_path, folder_name)
             upload_image_to_firebase(cam1_contour_path, folder_name)
-            upload_image_to_firebase(cam1_pressure_path, folder_name)
+            upload_image_to_firebase(cam1_pressure_map_path, folder_name)
+            upload_image_to_firebase(cam1_gray_heatmap_path, folder_name)
 
             upload_image_to_firebase(cam2_original_path, folder_name)
             upload_image_to_firebase(cam2_contour_path, folder_name)
-            upload_image_to_firebase(cam2_pressure_path, folder_name)
+            upload_image_to_firebase(cam2_pressure_map_path, folder_name)
+            upload_image_to_firebase(cam2_gray_heatmap_path, folder_name)
 
-        # Salir al presionar 'q'
         if key == ord('q'):
             break
 
-    # Liberar las cámaras y cerrar las ventanas
     cap1.release()
     cap2.release()
     cv2.destroyAllWindows()
