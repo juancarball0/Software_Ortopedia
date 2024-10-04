@@ -1,144 +1,114 @@
-import cv2
-import numpy as np
-import firebase_admin
-from firebase_admin import credentials, storage
+import tkinter as tk
+from tkinter import Label, Button
+from backend import start_cameras_and_analyze, upload_image_to_firebase
+import threading
+from PIL import Image, ImageTk
 import os
-import time  # Para generar timestamps únicos
+import time
+import cv2
 
-# Inicializa Firebase
-cred = credentials.Certificate('credenciales.json')
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://ortopedia-d21f4-default-rtdb.firebaseio.com/',
-    'storageBucket': 'ortopedia-d21f4.appspot.com'
-})
+# Variables globales
+current_frame1 = None
+current_frame2 = None
 
-def upload_image_to_firebase(image_path, folder_name):
-    bucket = storage.bucket()
-    blob = bucket.blob(f"{folder_name}/{os.path.basename(image_path)}")
-    blob.upload_from_filename(image_path)
-    print(f"Imagen {image_path} subida exitosamente a Firebase Storage en la carpeta {folder_name}.")
+def update_camera_labels(frame1, frame2, camera_labels):
+    global current_frame1, current_frame2
+    # Convertir las imágenes de OpenCV a un formato que Tkinter pueda usar
+    current_frame1 = frame1.copy()
+    current_frame2 = frame2.copy()
 
-def process_image(frame):
-    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    blurred_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
-    binary_frame = cv2.adaptiveThreshold(blurred_frame, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-    contours, _ = cv2.findContours(binary_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contour_frame = frame.copy()
-    cv2.drawContours(contour_frame, contours, -1, (0, 255, 0), 2)
-    pressure_map = detect_pressure_areas(gray_frame)
-    return contour_frame, binary_frame, contours, pressure_map
+    image1 = Image.fromarray(cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB))
+    image2 = Image.fromarray(cv2.cvtColor(frame2, cv2.COLOR_BGR2RGB))
 
-def detect_pressure_areas(gray_frame):
-    normalized_frame = cv2.normalize(gray_frame, None, 0, 255, cv2.NORM_MINMAX)
-    heatmap = cv2.applyColorMap(normalized_frame, cv2.COLORMAP_JET)
-    return heatmap
+    # Redimensionar las imágenes
+    image1 = image1.resize((400, 400), Image.ANTIALIAS)
+    image2 = image2.resize((400, 400), Image.ANTIALIAS)
 
-def measure_foot_dimensions(contours):
-    if len(contours) > 0:
-        contour = max(contours, key=cv2.contourArea)
-        area = cv2.contourArea(contour)
-        perimeter = cv2.arcLength(contour, True)
-        x, y, w, h = cv2.boundingRect(contour)
-        return w, h, area, perimeter
-    return None
+    # Convertir a PhotoImage
+    photo1 = ImageTk.PhotoImage(image1)
+    photo2 = ImageTk.PhotoImage(image2)
 
-def start_cameras_and_analyze():
-    cap1 = cv2.VideoCapture(0)
-    cap2 = cv2.VideoCapture(1)
+    # Actualizar las etiquetas
+    camera_labels[0].config(image=photo1)
+    camera_labels[0].image = photo1  # Necesario para evitar que el garbage collector elimine la imagen
+    camera_labels[1].config(image=photo2)
+    camera_labels[1].image = photo2
 
-    if not cap1.isOpened() or not cap2.isOpened():
-        print("Error al abrir las cámaras.")
-        return
+def save_images(status_label, folder_name):
+    global current_frame1, current_frame2
+    if current_frame1 is not None and current_frame2 is not None:
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        
+        # Guardar imágenes
+        cam1_path = f'captures/camera1_{timestamp}.png'
+        cam2_path = f'captures/camera2_{timestamp}.png'
 
-    while True:
-        ret1, frame1 = cap1.read()
-        ret2, frame2 = cap2.read()
+        if not os.path.exists('captures'):
+            os.makedirs('captures')
 
-        if not ret1 or not ret2:
-            print("Error al capturar imágenes de las cámaras.")
-            break
+        cv2.imwrite(cam1_path, current_frame1)
+        cv2.imwrite(cam2_path, current_frame2)
 
-        # Procesar las imágenes de ambas cámaras
-        contour_frame1, binary_frame1, contours1, pressure_map1 = process_image(frame1)
-        contour_frame2, binary_frame2, contours2, pressure_map2 = process_image(frame2)
+        # Subir imágenes a Firebase
+        upload_image_to_firebase(cam1_path, folder_name)
+        upload_image_to_firebase(cam2_path, folder_name)
 
-        dimensions1 = measure_foot_dimensions(contours1)
-        dimensions2 = measure_foot_dimensions(contours2)
+        # Actualizar etiqueta de estado en la interfaz
+        status_label.config(text="Imágenes guardadas y subidas a Firebase.")
+    else:
+        status_label.config(text="No hay imágenes para guardar.")
 
-        if dimensions1:
-            width1, height1, area1, perimeter1 = dimensions1
-            cv2.putText(contour_frame1, f"Ancho: {width1}px", (10, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-            cv2.putText(contour_frame1, f"Alto: {height1}px", (10, 60),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-            cv2.putText(contour_frame1, f"Area: {area1}px^2", (10, 90),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+def start_analysis_thread(status_label, camera_labels):
+    analysis_thread = threading.Thread(target=start_cameras_and_analyze, args=(status_label, camera_labels))
+    analysis_thread.start()
 
-        if dimensions2:
-            width2, height2, area2, perimeter2 = dimensions2
-            cv2.putText(contour_frame2, f"Ancho: {width2}px", (10, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-            cv2.putText(contour_frame2, f"Alto: {height2}px", (10, 60),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-            cv2.putText(contour_frame2, f"Area: {area2}px^2", (10, 90),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+def create_gui():
+    root = tk.Tk()
+    root.title("Navarro Ortopedia")
 
-        # Mostrar las imágenes procesadas de ambas cámaras
-        cv2.imshow("Imagen Original - Camara 1", frame1)
-        cv2.imshow("Contornos - Camara 1", contour_frame1)
-        cv2.imshow("Mapa de Presión - Camara 1", pressure_map1)
+    # Frame para datos del paciente
+    data_frame = tk.Frame(root)
+    data_frame.pack(pady=20)
 
-        cv2.imshow("Imagen Original - Camara 2", frame2)
-        cv2.imshow("Contornos - Camara 2", contour_frame2)
-        cv2.imshow("Mapa de Presión - Camara 2", pressure_map2)
+    Label(data_frame, text="Paso").grid(row=0, column=0)
+    Label(data_frame, text="Talla").grid(row=1, column=0)
+    Label(data_frame, text="Altura").grid(row=2, column=0)
+    Label(data_frame, text="Actividad / Deporte").grid(row=3, column=0)
 
-        key = cv2.waitKey(1) & 0xFF
+    # Campos de entrada
+    paso_entry = tk.Entry(data_frame)
+    talla_entry = tk.Entry(data_frame)
+    altura_entry = tk.Entry(data_frame)
+    actividad_entry = tk.Entry(data_frame)
 
-        # Generar nueva carpeta cada vez que se presiona 'c'
-        if key == ord('c'):
-            # Crear un folder único basado en el timestamp cada vez que se guarda
-            timestamp = time.strftime("%Y%m%d-%H%M%S")
-            folder_name = f"paciente_{timestamp}"
+    paso_entry.grid(row=0, column=1)
+    talla_entry.grid(row=1, column=1)
+    altura_entry.grid(row=2, column=1)
+    actividad_entry.grid(row=3, column=1)
 
-            if not os.path.exists('captures'):
-                os.makedirs('captures')
+    # Botones
+    start_button = Button(root, text="Iniciar Análisis", command=lambda: start_analysis_thread(status_label, camera_labels))
+    start_button.pack(pady=10)
 
-            cam1_original_path = f'./captures/foot_cam1_original_{timestamp}.png'
-            cam1_contour_path = f'./captures/foot_cam1_contours_{timestamp}.png'
-            cam1_pressure_path = f'./captures/foot_cam1_pressure_{timestamp}.png'
+    save_button = Button(root, text="Guardar Capturas", command=lambda: save_images(status_label, "captures"))
+    save_button.pack(pady=10)
 
-            cam2_original_path = f'./captures/foot_cam2_original_{timestamp}.png'
-            cam2_contour_path = f'./captures/foot_cam2_contours_{timestamp}.png'
-            cam2_pressure_path = f'./captures/foot_cam2_pressure_{timestamp}.png'
+    close_button = Button(root, text="Cerrar", command=root.quit)
+    close_button.pack(pady=10)
 
-            # Guardar imágenes de ambas cámaras
-            cv2.imwrite(cam1_original_path, frame1)
-            cv2.imwrite(cam1_contour_path, contour_frame1)
-            cv2.imwrite(cam1_pressure_path, pressure_map1)
+    status_label = Label(root, text="Listo para iniciar el análisis.")
+    status_label.pack(pady=10)
 
-            cv2.imwrite(cam2_original_path, frame2)
-            cv2.imwrite(cam2_contour_path, contour_frame2)
-            cv2.imwrite(cam2_pressure_path, pressure_map2)
+    # Frame para mostrar las cámaras
+    camera_frame = tk.Frame(root)
+    camera_frame.pack(pady=20)
 
-            print("Imágenes capturadas de ambas cámaras y guardadas localmente.")
+    # Etiquetas para mostrar las cámaras
+    camera_labels = [Label(camera_frame), Label(camera_frame)]
+    camera_labels[0].pack(side=tk.LEFT, padx=10)
+    camera_labels[1].pack(side=tk.LEFT, padx=10)
 
-            # Subir imágenes a Firebase, dentro del folder del paciente
-            upload_image_to_firebase(cam1_original_path, folder_name)
-            upload_image_to_firebase(cam1_contour_path, folder_name)
-            upload_image_to_firebase(cam1_pressure_path, folder_name)
-
-            upload_image_to_firebase(cam2_original_path, folder_name)
-            upload_image_to_firebase(cam2_contour_path, folder_name)
-            upload_image_to_firebase(cam2_pressure_path, folder_name)
-
-        # Salir al presionar 'q'
-        if key == ord('q'):
-            break
-
-    # Liberar las cámaras y cerrar las ventanas
-    cap1.release()
-    cap2.release()
-    cv2.destroyAllWindows()
+    root.mainloop()
 
 if __name__ == "__main__":
-    start_cameras_and_analyze()
+    create_gui()

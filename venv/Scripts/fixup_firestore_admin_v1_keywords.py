@@ -1,4 +1,4 @@
-#!C:\Users\Usuario\OneDrive\Documentos\Trabajos\Software_Navarro\venv\Scripts\python.exe
+#!C:\Users\Usuario\Desktop\Programacion\Trabajo\Podologia (2)\Software_Ortopedia\venv\Scripts\python.exe
 # -*- coding: utf-8 -*-
 # Copyright 2024 Google LLC
 #
